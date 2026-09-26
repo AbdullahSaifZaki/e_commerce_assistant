@@ -30,7 +30,7 @@ class products_variants(base):
     variant_product_id: Mapped[int] = mapped_column(Integer, autoincrement=True , primary_key=True)
     product_id: Mapped[int] = mapped_column(Integer, ForeignKey("products.product_id"),nullable=False)
     sku: Mapped[str] = mapped_column(String(20),nullable=False,unique=True)
-    color: Mapped[str|None] =   (String(20))
+    color: Mapped[str|None] = mapped_column(String(20))
     size: Mapped[str|None] = mapped_column(String(5))
     price: Mapped[Decimal|None] = mapped_column(Numeric(5,2))
     stock_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -45,13 +45,11 @@ class orders(base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     shipped_at: Mapped[datetime|None] = mapped_column(DateTime)
     delivered_at: Mapped[datetime|None] = mapped_column(DateTime)
-    tracking_number: Mapped[str] = mapped_column(String(100))
-    carrier: Mapped[str] = mapped_column(String(100))
+    tracking_number: Mapped[str|None] = mapped_column(String(100))
+    carrier: Mapped[str|None] = mapped_column(String(100))
 
 class faq(base):
     __tablename__ = "faq"
     question_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    question: Mapped[str] = mapped_column(String[500])
-    answer: Mapped[str] = mapped_column(String[500])
-
-
+    question: Mapped[str] = mapped_column(String(500))
+    answer: Mapped[str] = mapped_column(String(500))

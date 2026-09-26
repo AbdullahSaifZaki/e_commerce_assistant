@@ -26,7 +26,7 @@ DB_URI = os.getenv("MEMORY_DATABASE_URL")
 async def lifespan(app: FastAPI):
 
     with PostgresSaver.from_conn_string(DB_URI) as checkpointer:
-
+        checkpointer.setup()
 
         app.state.agent_graph = graph.compile(
             checkpointer=checkpointer
