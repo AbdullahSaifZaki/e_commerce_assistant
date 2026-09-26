@@ -12,7 +12,7 @@ SQLAlchemy connection URL (using the `mysql+pymysql://` scheme). From the
 repository root, run:
 
 ```sh
-python -m scripts.seed_demo
+python -m database.seed_demo
 ```
 
 The script creates the required tables and inserts four synthetic products,

@@ -1,6 +1,6 @@
 """Create a small, synthetic catalog in an empty e-commerce database.
 
-Run with ``python -m scripts.seed_demo`` after setting ECOMMERCE_DATABASE_URL.
+Run with ``python -m database.seed_demo`` after setting ECOMMERCE_DATABASE_URL.
 Existing application data is left untouched.
 """
 
