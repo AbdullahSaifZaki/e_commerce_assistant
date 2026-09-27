@@ -2,7 +2,7 @@
     #aisle-app *{box-sizing:border-box}
     html,body{margin:0;height:100%;background:radial-gradient(circle at 45% 15%,#142333 0%,#101B27 35%,#0F161C 70%,#0C1319 100%)}
     body{padding:14px;box-sizing:border-box}
-    #aisle-app{height:calc(100dvh - 28px);min-height:0;max-width:1800px;margin:auto}
+    #aisle-app{height:calc(100vh - 28px);height:calc(100dvh - 28px);min-height:0;max-width:1800px;margin:auto;grid-template-rows:minmax(0,1fr)}
     #aisle-app .main{min-height:0;overflow:hidden}
     #aisle-app .side{min-height:0;position:relative}
     #aisle-app .history-list{overflow-y:auto;overflow-x:clip;min-height:0;scrollbar-width:thin;scrollbar-color:var(--slate) transparent}
@@ -112,15 +112,15 @@
 }
 @media(max-width:560px){
   body{padding:0}
-  #aisle-app{height:100dvh;min-height:0;border-radius:0;border:0;display:grid;grid-template-columns:minmax(0,1fr)}
-  #aisle-app .side{display:none;position:fixed;inset:0 auto 0 0;width:min(300px,85vw);z-index:3;border:0;border-right:1px solid var(--line);padding:30px 20px}
+  #aisle-app{height:100vh;height:100dvh;min-height:0;border-radius:0;border:0;display:grid;grid-template-columns:minmax(0,1fr)}
+  #aisle-app .side{display:none;position:fixed;inset:0 auto 0 0;width:min(300px,85vw);z-index:3;border:0;border-right:1px solid var(--line);padding:max(30px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom));padding-left:max(20px,env(safe-area-inset-left))}
   #aisle-app.history-open .side{display:flex}
   #aisle-app .close-history{display:grid;place-items:center;position:absolute;right:12px;top:24px;width:44px;height:44px;background:transparent;border:0;border-radius:8px}
   #aisle-app .backdrop{display:block;position:fixed;inset:0;z-index:2;background:#0009;border:0}
   #aisle-app .main{height:100%;min-height:0}
-  #aisle-app .topbar{padding:12px 16px;min-height:68px}
+  #aisle-app .topbar{padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));min-height:68px}
   #aisle-app .chat-scroll .welcome{padding:28px 18px}
-  #aisle-app .composer-wrap{padding:0 16px max(14px,env(safe-area-inset-bottom))}
+  #aisle-app .composer-wrap{padding:0 max(16px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
   #aisle-app .mobile-toggle{width:44px;height:44px;min-width:44px}
   #aisle-app .retry{min-height:44px}
   #aisle-app .side-foot{display:block}
@@ -216,7 +216,9 @@
 @media(max-width:560px){#aisle-app .welcome-hero{padding:32px 20px 36px}#aisle-app .welcome-hero h1{font-size:34px}}
 /* Ambient blue light behind the main content. */
 #aisle-app::before{content:"";position:absolute;inset:8% 4% 28% 28%;background:radial-gradient(circle,rgba(80,150,220,0.12) 0%,rgba(40,90,140,0.05) 40%,transparent 70%);filter:blur(50px);pointer-events:none;z-index:0}
-#aisle-app>.side,#aisle-app>.main{position:relative;z-index:1}
+/* Preserve the fixed mobile drawer so it cannot create an empty grid row. */
+#aisle-app>.side,#aisle-app>.main{z-index:1}
+#aisle-app>.main{position:relative}
 @media(max-width:560px){#aisle-app>.side{z-index:3}}
 /* Fine film grain so large dark areas never look flat. */
 body::after{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");opacity:0.018;mix-blend-mode:soft-light;pointer-events:none;z-index:9999}
