@@ -2,9 +2,11 @@
 
 import { createChatApi } from './api.js';
 import { AuthenticationRequiredError } from './auth.js';
+import { bindMobileViewport } from './mobile-viewport.js';
 
 export function startChat({ config, auth, user, onAuthenticationRequired }) {
   const root = document.getElementById("aisle-app");
+  bindMobileViewport(root);
   const find = (selector) => root.querySelector(selector);
   const storageKey = `aisle.conversations.v1.${config.demoMode ? "demo" : "live"}.${encodeURIComponent(user.sub)}`;
   const chatApi = createChatApi(auth, config);

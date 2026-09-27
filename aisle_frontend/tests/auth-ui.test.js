@@ -35,6 +35,7 @@ function setup(t, overrides = {}) {
     matchMedia: query => ({ matches: query.includes('reduced-motion'), addEventListener() {} }),
     requestAnimationFrame: callback => callback(),
   };
+  dom.window.matchMedia = replacements.matchMedia;
   for (const [name, value] of Object.entries(replacements)) {
     const previous = Object.getOwnPropertyDescriptor(globalThis, name);
     Object.defineProperty(globalThis, name, { value, writable: true, configurable: true });
