@@ -102,6 +102,8 @@ npm run preview
 
 Deploy `dist/` to a static host. Configure the host to proxy `/api/chat` to FastAPI `/chat`, or set `VITE_API_URL` to your HTTPS backend `/chat` URL before building. Vite’s development proxy is not part of the static build. For a separate API origin, include the production frontend origin in backend `CORS_ORIGINS`.
 
+On iPhone, use the browser's **Add to Home Screen** action and launch the new aisle icon to open the standalone app without browser toolbars. A regular browser tab retains its own status and address bars. The chat shell follows the visual viewport while the keyboard is open.
+
 Add the production frontend URL with a trailing `/` to Auth0 Allowed Callback URLs and Allowed Logout URLs; add its origin without a trailing slash to Allowed Web Origins. Use HTTPS in production. All `VITE_*` values are public build-time configuration; never place secrets there.
 
 ## Verification
