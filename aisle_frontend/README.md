@@ -63,13 +63,13 @@ The backend also needs its existing `OPENAI_API_KEY`, `ECOMMERCE_DATABASE_URL`, 
 
 ## Login and API behavior
 
-- The app first checks the Auth0 session. Signed-out visitors go directly to Auth0 Universal Login using the SDK’s authorization code flow with PKCE, without an Aisle welcome page.
-- If login fails, a small error screen provides a **Log in** button to retry. Callback errors do not automatically restart login.
+- The app first checks the Auth0 session. Signed-out visitors see the Aisle login page.
+- **Log in** opens Auth0 Universal Login using the SDK’s authorization code flow with PKCE.
 - The SDK handles the redirect, verifies the transaction, and exchanges the code. Callback parameters are removed from the address bar; return paths are restricted to this origin.
 - Authenticated users see chat, their account name, and **Log out**. Logout clears the SDK session and returns through Auth0 to the app.
 - Before every chat request, `getTokenSilently()` retrieves a cached or renewed **access token**. It is sent as `Authorization: Bearer <access_token>`; no ID token is sent to FastAPI.
 - Tokens use the SDK’s memory cache, never application localStorage. On reload the SDK attempts to restore the Auth0 session. Browsers that block silent authentication may require another login.
-- A token-expiry/login-required error or API 401 redirects the user to Auth0 while preserving the unanswered message. After login, **Try again** resends it explicitly; chat POSTs are not automatically replayed.
+- A token-expiry/login-required error or API 401 returns the user to login while preserving the unanswered message. After login, **Try again** resends it explicitly; chat POSTs are not automatically replayed.
 - FastAPI validates RS256 signatures using the tenant JWKS, exact issuer, audience, expiration, and subject. Missing/invalid tokens return 401; missing configuration or a JWKS connection outage returns 503.
 - CORS permits the `Authorization` and `Content-Type` headers for configured origins.
 

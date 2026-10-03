@@ -53,45 +53,27 @@ function setup(t, overrides = {}) {
   return { Client, find, dom };
 }
 
-test('signed-out users go directly to Auth0 without displaying the welcome screen', async t => {
-  let called = 0;
-  let finishRedirect;
-  const redirect = new Promise(resolve => { finishRedirect = resolve; });
-  const { Client, find } = setup(t, {
-    loginWithRedirect: async () => { called++; await redirect; },
-  });
-  assert.equal(find('#login-page').hidden, true);
-  const mounted = mountAuth({ config, Client, startChat: () => assert.fail('must not initialize chat') });
-  await settle();
-  assert.equal(called, 1);
-  assert.equal(find('#login-page').hidden, true);
+test('signed-out users see login and cannot see conversation history', async t => {
+  const { Client, find } = setup(t);
+  await mountAuth({ config, Client, startChat: () => assert.fail('must not initialize chat') });
+  assert.equal(find('#login-page').hidden, false);
   assert.equal(find('#aisle-app').hidden, true);
-  assert.equal(find('#auth-loading').hidden, false);
-  assert.match(find('#auth-loading').textContent, /opening.*login/i);
-  finishRedirect();
-  await mounted;
+  assert.equal(find('#login-button').disabled, false);
 });
 
 test('login button invokes redirect and recovers from failure', async t => {
   let called = 0;
   const { Client, find } = setup(t, { loginWithRedirect: async () => { called++; throw new Error('offline'); } });
   await mountAuth({ config, Client, startChat });
-  assert.equal(called, 1);
-  assert.equal(find('#login-page').hidden, false);
-  assert.equal(find('#auth-loading').hidden, true);
-  assert.match(find('#auth-error').textContent, /connection/i);
   find('#login-button').click();
   await settle();
-  assert.equal(called, 2);
+  assert.equal(called, 1);
   assert.equal(find('#auth-error').hidden, false);
   assert.equal(find('#login-button').disabled, false);
 });
 
 test('signed-in chat sends a bearer token, renders reply and isolates saved history', async t => {
-  const { Client, find, dom } = setup(t, {
-    isAuthenticated: async () => true,
-    loginWithRedirect: async () => assert.fail('signed-in users must not be redirected'),
-  });
+  const { Client, find, dom } = setup(t, { isAuthenticated: async () => true });
   localStorage.setItem('aisle.conversations.v1.live.auth0%7Cbob', JSON.stringify({
     conversations: [{ id: 'private', title: 'Bob private chat', updatedAt: Date.now(), messages: [] }],
   }));
@@ -105,7 +87,6 @@ test('signed-in chat sends a bearer token, renders reply and isolates saved hist
   await mountAuth({ config, Client, startChat });
   assert.equal(find('#aisle-app').hidden, false);
   assert.equal(find('#login-page').hidden, true);
-  assert.equal(find('#auth-loading').hidden, true);
   assert.equal(find('#account-name').textContent, '<b>Alice</b>');
   assert.equal(find('#account-name b'), null);
   assert.equal(find('.history-item'), null);
@@ -132,41 +113,19 @@ test('logout immediately hides chats and invokes Auth0 logout', async t => {
   await settle();
   assert.equal(called, 1);
   assert.equal(find('#aisle-app').hidden, true);
-  assert.equal(find('#login-page').hidden, true);
-  assert.match(find('#auth-loading').textContent, /logging out/i);
 });
 
-test('expired session redirects to Auth0 and keeps the unanswered message', async t => {
-  let called = 0;
+test('expired session returns to login and keeps the unanswered message', async t => {
   const { Client, find, dom } = setup(t, {
     isAuthenticated: async () => true,
     getTokenSilently: async () => { throw { error: 'login_required' }; },
-    loginWithRedirect: async () => { called++; },
   });
   await mountAuth({ config, Client, startChat });
   find('textarea').value = 'Find shoes';
   find('.composer').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
   await settle();
   assert.equal(find('#aisle-app').hidden, true);
-  assert.equal(called, 1);
-  assert.equal(find('#login-page').hidden, true);
-  assert.equal(find('#auth-loading').hidden, false);
+  assert.match(find('#auth-error').textContent, /log in again/i);
   const saved = JSON.parse(localStorage.getItem('aisle.conversations.v1.live.auth0%7Calice'));
   assert.equal(saved.conversations[0].messages[0].content, 'Find shoes');
-});
-
-test('denied callbacks show a retry option instead of automatically redirecting again', async t => {
-  let called = 0;
-  const { Client, find, dom } = setup(t, {
-    handleRedirectCallback: async () => { throw { error: 'access_denied' }; },
-    loginWithRedirect: async () => { called++; },
-  });
-  dom.window.history.replaceState({}, '', '/?error=access_denied&state=test');
-  await mountAuth({ config, Client, startChat: () => assert.fail('must not initialize chat') });
-  assert.equal(called, 0);
-  assert.equal(find('#login-page').hidden, false);
-  assert.equal(find('#auth-loading').hidden, true);
-  assert.equal(find('#login-button').disabled, false);
-  assert.match(find('#auth-error').textContent, /access_denied/);
-  assert.equal(dom.window.location.search, '');
 });

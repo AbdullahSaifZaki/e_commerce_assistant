@@ -7,7 +7,6 @@ export async function mountAuth({ config, Client, startChat }) {
   const logout = document.querySelector('#logout-button');
   const status = document.querySelector('#auth-status');
   const error = document.querySelector('#auth-error');
-  const loading = document.querySelector('#auth-loading');
   let auth;
   let stage = 'configuration';
 
@@ -27,7 +26,6 @@ export async function mountAuth({ config, Client, startChat }) {
 
   function showLogin(message = '') {
     app.hidden = true;
-    loading.hidden = true;
     page.hidden = false;
     status.textContent = 'Log in to start your next conversation.';
     error.textContent = message;
@@ -37,15 +35,7 @@ export async function mountAuth({ config, Client, startChat }) {
     document.title = 'Log in — aisle';
   }
 
-  function showLoading(message) {
-    app.hidden = true;
-    page.hidden = true;
-    loading.hidden = false;
-    loading.textContent = message;
-  }
-
-  async function openLogin() {
-    showLoading('Opening secure login…');
+  login.addEventListener('click', async () => {
     login.disabled = true;
     login.textContent = 'Opening secure login…';
     error.hidden = true;
@@ -55,15 +45,14 @@ export async function mountAuth({ config, Client, startChat }) {
       showLogin('Login could not be opened. Check your connection and try again.');
       login.focus();
     }
-  }
-
-  login.addEventListener('click', openLogin);
+  });
 
   logout.addEventListener('click', async () => {
     logout.disabled = true;
     // Hide conversations immediately while the SDK clears the local session.
-    showLoading('Logging out…');
+    showLogin();
     login.disabled = true;
+    status.textContent = 'Logging out…';
     try {
       await auth.logout();
     } catch {
@@ -76,13 +65,15 @@ export async function mountAuth({ config, Client, startChat }) {
     stage = 'authentication';
     const user = await auth.initialize();
     if (!user?.sub) {
-      await openLogin();
+      showLogin();
       return;
     }
     stage = 'chat startup';
     document.querySelector('#account-name').textContent = user.name || user.email || 'Your account';
-    startChat({ config, auth, user, onAuthenticationRequired: openLogin });
-    loading.hidden = true;
+    startChat({ config, auth, user, onAuthenticationRequired: message => {
+      showLogin(message);
+      login.focus();
+    } });
     page.hidden = true;
     app.hidden = false;
   } catch (cause) {
