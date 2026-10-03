@@ -14,17 +14,15 @@
 <script type="module" src="main.js"></script>
 </head>
 <body>
-<main id="login-page" aria-labelledby="login-title">
+<p id="auth-loading" role="status">Checking your session…</p>
+<noscript>Please enable JavaScript to log in to Aisle.</noscript>
+<main id="login-page" aria-labelledby="login-title" hidden>
   <section class="login-card">
     <a class="login-brand" href="/" aria-label="Aisle home">aisle<span>.</span></a>
-    <p class="login-eyebrow">YOUR PERSONAL SHOPPING ASSISTANT</p>
-    <h1 id="login-title">Good finds.<br><span>One conversation away.</span></h1>
-    <p class="login-intro">Find your next favorite, track an order, or get a little shopping advice. Make yourself at home.</p>
-    <p id="auth-status" role="status">Checking your session…</p>
+    <h1 id="login-title">Sign in to aisle</h1>
+    <p id="auth-status" role="status"></p>
     <p id="auth-error" role="alert" hidden></p>
     <button id="login-button" type="button" disabled>Log in</button>
-    <p class="login-note">Continue securely with Auth0.</p>
-    <noscript>Please enable JavaScript to log in to Aisle.</noscript>
   </section>
 </main>
 <div id="aisle-app" hidden>
