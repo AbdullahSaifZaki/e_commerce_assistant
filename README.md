@@ -23,43 +23,60 @@ The assistant retrieves information; it cannot place orders, process payments, o
 
 ### 1. Get the project
 
-Install **Git**, **Python 3.11**, and **Node.js 22.12+**, then open a terminal:
+Install **Git**, **Python 3.11**, **Node.js 22.12+**, and **MySQL**, then run:
 
 ```bash
 git clone https://github.com/abdullahsaifomairi/e_commerce_assistant.git
 cd e_commerce_assistant
 ```
 
-You’ll also need an OpenAI API key, an Auth0 account, and connections to **MySQL**, **PostgreSQL**, and **Redis with TLS**. These services can be hosted remotely while the application runs locally.
+You also need an **OpenAI API key**, an **Auth0 account**, a **PostgreSQL database**, and **Redis with TLS**.
 
-**Database prerequisite:** MySQL must contain populated `products`, `products_variants`, `orders`, and `faq` tables matching the project’s schema. Database setup and sample-data scripts are not included. PostgreSQL checkpoint tables are created automatically at startup.
+### 2. Set up MySQL
 
-### 2. Configure the backend
+Start MySQL, then create a database and import the tables and sample data:
 
-Create `.env` in the project’s main folder and replace the example credentials:
+```bash
+mysql -u root -p -e "CREATE DATABASE aisle;"
+mysql -u root -p aisle < database/setup.sql
+```
+
+Enter your MySQL password when prompted. Replace `root` if you use a different MySQL username.
+
+> These commands require `database/setup.sql` to be included in the repository. Import into a new database because the file may replace existing tables.
+
+### 3. Configure the backend
+
+Copy the environment template:
+
+```bash
+cp .env.example .env
+```
+
+Fill in `.env` with your credentials:
 
 ```dotenv
 OPENAI_API_KEY=YOUR_OPENAI_API_KEY
-ECOMMERCE_DATABASE_URL=mysql+pymysql://USER:PASSWORD@HOST:3306/DATABASE
+ECOMMERCE_DATABASE_URL=mysql+pymysql://USER:PASSWORD@localhost:3306/aisle
 MEMORY_DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 REDIS_URL=rediss://default:PASSWORD@HOST:PORT
 AUTH0_DOMAIN=YOUR_TENANT.auth0.com
 AUTH0_AUDIENCE=https://api.aisle.app
 ```
 
-### 3. Configure login and the frontend
+`USER` and `PASSWORD` are your database credentials. `HOST` is the database server address; use `localhost` when it runs on your computer. PostgreSQL checkpoint tables are created automatically.
+
+### 4. Configure login
 
 In Auth0, create a **Single Page Application** and an **API** with identifier `https://api.aisle.app` and signing algorithm **RS256**. Allow the application to access that API.
 
-Set these application URLs:
+Set the application URLs:
 
-| Auth0 setting | Value |
+| Setting | Value |
 |---|---|
 | Allowed Callback URLs | `http://127.0.0.1:8770/` |
 | Allowed Logout URLs | `http://127.0.0.1:8770/` |
 | Allowed Web Origins | `http://127.0.0.1:8770` |
-
-See [Auth0’s setup guide](https://auth0.com/docs/quickstart/spa/vanillajs) for dashboard guidance.
 
 Create `aisle_frontend/.env.local`:
 
@@ -72,7 +89,7 @@ VITE_API_URL=/api/chat
 
 Use the same Auth0 domain and audience in both environment files.
 
-### 4. Start the backend
+### 5. Start the backend
 
 From the project’s main folder:
 
@@ -85,11 +102,11 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 
 On Windows, use `python` instead of `python3` and activate with `.venv\Scripts\Activate.ps1`.
 
-The first launch downloads the embedding model and builds embeddings from your database, so startup may take longer.
+The first launch downloads the embedding model, so startup may take longer.
 
-### 5. Start the frontend
+### 6. Start the frontend
 
-Leave the backend running. Open a second terminal in the project’s main folder:
+Open a second terminal in the project’s main folder:
 
 ```bash
 cd aisle_frontend
