@@ -1,12 +1,8 @@
 import { createAuth } from './auth.js';
 
 export async function mountAuth({ config, Client, startChat }) {
-  const page = document.querySelector('#login-page');
   const app = document.querySelector('#aisle-app');
-  const login = document.querySelector('#login-button');
   const logout = document.querySelector('#logout-button');
-  const status = document.querySelector('#auth-status');
-  const error = document.querySelector('#auth-error');
   let auth;
   let stage = 'configuration';
 
@@ -24,47 +20,58 @@ export async function mountAuth({ config, Client, startChat }) {
     return code;
   }
 
-  function showLogin(message = '') {
+  // There is no local login page: signed-out visitors go straight to Auth0
+  // Universal Login. This bare fallback screen only appears when the redirect
+  // itself fails, Auth0 is misconfigured, or signed-in chat cannot start.
+  function showFatal(message, { retry = false } = {}) {
     app.hidden = true;
-    page.hidden = false;
-    status.textContent = 'Log in to start your next conversation.';
-    error.textContent = message;
-    error.hidden = !message;
-    login.disabled = !auth;
-    login.textContent = 'Log in';
-    document.title = 'Log in — aisle';
-  }
-
-  // Signed-out visitors go straight to Auth0 Universal Login — the local
-  // login page is only a fallback when the redirect itself fails (offline,
-  // popup blocked, misconfigured tenant).
-  async function beginUniversalLogin(fallbackMessage = 'Login could not be opened. Check your connection and try again.') {
-    page.hidden = true;
-    try {
-      await auth.login();
-    } catch {
-      showLogin(fallbackMessage);
-      login.focus();
+    document.title = 'Something went wrong — aisle';
+    let box = document.querySelector('#auth-fallback');
+    if (!box) {
+      box = document.createElement('main');
+      box.id = 'auth-fallback';
+      const text = document.createElement('p');
+      text.id = 'auth-fallback-message';
+      text.setAttribute('role', 'alert');
+      box.append(text);
+      document.body.prepend(box);
+    }
+    box.hidden = false;
+    box.querySelector('#auth-fallback-message').textContent = message;
+    let again = box.querySelector('button');
+    if (retry && auth) {
+      if (!again) {
+        again = document.createElement('button');
+        again.type = 'button';
+        again.textContent = 'Try again';
+        box.append(again);
+      }
+      again.hidden = false;
+      again.onclick = () => {
+        box.hidden = true;
+        void beginUniversalLogin();
+      };
+      again.focus();
+    } else if (again) {
+      again.hidden = true;
     }
   }
 
-  login.addEventListener('click', async () => {
-    login.disabled = true;
-    login.textContent = 'Opening secure login…';
-    error.hidden = true;
-    await beginUniversalLogin();
-  });
+  async function beginUniversalLogin(fallbackMessage = 'Login could not be opened. Check your connection and try again.') {
+    try {
+      await auth.login();
+    } catch {
+      showFatal(fallbackMessage, { retry: true });
+    }
+  }
 
   logout.addEventListener('click', async () => {
     logout.disabled = true;
-    // Hide conversations immediately while the SDK clears the local session.
-    showLogin();
-    login.disabled = true;
-    status.textContent = 'Logging out…';
     try {
       await auth.logout();
     } catch {
-      showLogin('Logout could not finish. Log in again to continue.');
+      logout.disabled = false;
+      showFatal('Logout could not finish. Log in again to continue.', { retry: true });
     }
   });
 
@@ -81,11 +88,10 @@ export async function mountAuth({ config, Client, startChat }) {
     startChat({ config, auth, user, onAuthenticationRequired: message => {
       void beginUniversalLogin(message);
     } });
-    page.hidden = true;
     app.hidden = false;
   } catch (cause) {
     const code = diagnostic(cause);
-    showLogin(stage === 'chat startup'
+    showFatal(stage === 'chat startup'
       ? 'You are signed in, but chat could not start. Reload the page and try again.'
       : auth
       ? `We couldn’t complete your login (${code}). Please try again.`

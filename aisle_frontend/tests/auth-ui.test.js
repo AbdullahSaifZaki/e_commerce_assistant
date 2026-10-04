@@ -17,14 +17,14 @@ test('authentication errors retain a diagnostic without exposing credentials', a
     throw Object.assign(new Error('private token must not be displayed'), { error: 'access_denied' });
   } });
   await mountAuth({ config, Client, startChat });
-  assert.match(find('#auth-error').textContent, /access_denied/);
-  assert.doesNotMatch(find('#auth-error').textContent, /private token/);
+  assert.match(find('#auth-fallback-message').textContent, /access_denied/);
+  assert.doesNotMatch(find('#auth-fallback-message').textContent, /private token/);
 });
 
 test('chat startup errors are not reported as failed login', async t => {
   const { Client, find } = setup(t, { isAuthenticated: async () => true });
   await mountAuth({ config, Client, startChat: () => { throw new Error('broken UI'); } });
-  assert.match(find('#auth-error').textContent, /signed in.*chat could not start/i);
+  assert.match(find('#auth-fallback-message').textContent, /signed in.*chat could not start/i);
 });
 
 function setup(t, overrides = {}) {
@@ -59,19 +59,18 @@ test('signed-out users go straight to Universal Login', async t => {
   await mountAuth({ config, Client, startChat: () => assert.fail('must not initialize chat') });
   assert.equal(called, 1);
   assert.equal(find('#aisle-app').hidden, true);
-  // No fallback page while the redirect is in flight.
-  assert.equal(find('#login-page').hidden, true);
+  // No fallback screen while the redirect is in flight.
+  assert.equal(find('#auth-fallback'), null);
 });
 
-test('failed redirect falls back to the login page and the button retries', async t => {
+test('failed redirect shows a fallback screen with a retry button', async t => {
   let called = 0;
   const { Client, find } = setup(t, { loginWithRedirect: async () => { called++; throw new Error('offline'); } });
   await mountAuth({ config, Client, startChat });
   assert.equal(called, 1);
-  assert.equal(find('#login-page').hidden, false);
-  assert.equal(find('#auth-error').hidden, false);
-  assert.equal(find('#login-button').disabled, false);
-  find('#login-button').click();
+  assert.equal(find('#auth-fallback').hidden, false);
+  assert.match(find('#auth-fallback-message').textContent, /could not be opened/i);
+  find('#auth-fallback button').click();
   await settle();
   assert.equal(called, 2);
 });
@@ -90,7 +89,7 @@ test('signed-in chat sends a bearer token, renders reply and isolates saved hist
   };
   await mountAuth({ config, Client, startChat });
   assert.equal(find('#aisle-app').hidden, false);
-  assert.equal(find('#login-page').hidden, true);
+  assert.equal(find('#login-page'), null);
   assert.equal(find('#account-name').textContent, '<b>Alice</b>');
   assert.equal(find('#account-name b'), null);
   assert.equal(find('.history-item'), null);
@@ -106,7 +105,7 @@ test('signed-in chat sends a bearer token, renders reply and isolates saved hist
   assert.equal(saved.includes('test-access-token'), false);
 });
 
-test('logout immediately hides chats and invokes Auth0 logout', async t => {
+test('logout invokes Auth0 logout without a login page', async t => {
   let called = 0;
   const { Client, find } = setup(t, {
     isAuthenticated: async () => true,
@@ -116,7 +115,9 @@ test('logout immediately hides chats and invokes Auth0 logout', async t => {
   find('#logout-button').click();
   await settle();
   assert.equal(called, 1);
-  assert.equal(find('#aisle-app').hidden, true);
+  // The browser leaves for Auth0; no local login page is shown.
+  assert.equal(find('#login-page'), null);
+  assert.equal(find('#auth-fallback'), null);
 });
 
 test('expired session redirects to Universal Login and keeps the unanswered message', async t => {
@@ -146,5 +147,5 @@ test('expired session shows the login message when the redirect fails', async t 
   find('.composer').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
   await settle();
   assert.equal(find('#aisle-app').hidden, true);
-  assert.match(find('#auth-error').textContent, /log in again/i);
+  assert.match(find('#auth-fallback-message').textContent, /log in again/i);
 });
