@@ -8,7 +8,7 @@ A conversational shopping assistant that helps customers find and compare produc
 ## Demo
 View the latest demo video [here](media/video_demo.mp4)
 
-Check the website [Aisle.com](https://askaisle.site/)
+Check the website [AskAisle.site](https://askaisle.site/)
 
 ## How it works
 
