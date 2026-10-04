@@ -35,16 +35,24 @@ export async function mountAuth({ config, Client, startChat }) {
     document.title = 'Log in — aisle';
   }
 
+  // Signed-out visitors go straight to Auth0 Universal Login — the local
+  // login page is only a fallback when the redirect itself fails (offline,
+  // popup blocked, misconfigured tenant).
+  async function beginUniversalLogin(fallbackMessage = 'Login could not be opened. Check your connection and try again.') {
+    page.hidden = true;
+    try {
+      await auth.login();
+    } catch {
+      showLogin(fallbackMessage);
+      login.focus();
+    }
+  }
+
   login.addEventListener('click', async () => {
     login.disabled = true;
     login.textContent = 'Opening secure login…';
     error.hidden = true;
-    try {
-      await auth.login();
-    } catch {
-      showLogin('Login could not be opened. Check your connection and try again.');
-      login.focus();
-    }
+    await beginUniversalLogin();
   });
 
   logout.addEventListener('click', async () => {
@@ -65,14 +73,13 @@ export async function mountAuth({ config, Client, startChat }) {
     stage = 'authentication';
     const user = await auth.initialize();
     if (!user?.sub) {
-      showLogin();
+      await beginUniversalLogin();
       return;
     }
     stage = 'chat startup';
     document.querySelector('#account-name').textContent = user.name || user.email || 'Your account';
     startChat({ config, auth, user, onAuthenticationRequired: message => {
-      showLogin(message);
-      login.focus();
+      void beginUniversalLogin(message);
     } });
     page.hidden = true;
     app.hidden = false;

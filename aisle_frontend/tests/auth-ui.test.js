@@ -53,23 +53,27 @@ function setup(t, overrides = {}) {
   return { Client, find, dom };
 }
 
-test('signed-out users see login and cannot see conversation history', async t => {
-  const { Client, find } = setup(t);
+test('signed-out users go straight to Universal Login', async t => {
+  let called = 0;
+  const { Client, find } = setup(t, { loginWithRedirect: async () => { called++; } });
   await mountAuth({ config, Client, startChat: () => assert.fail('must not initialize chat') });
-  assert.equal(find('#login-page').hidden, false);
+  assert.equal(called, 1);
   assert.equal(find('#aisle-app').hidden, true);
-  assert.equal(find('#login-button').disabled, false);
+  // No fallback page while the redirect is in flight.
+  assert.equal(find('#login-page').hidden, true);
 });
 
-test('login button invokes redirect and recovers from failure', async t => {
+test('failed redirect falls back to the login page and the button retries', async t => {
   let called = 0;
   const { Client, find } = setup(t, { loginWithRedirect: async () => { called++; throw new Error('offline'); } });
   await mountAuth({ config, Client, startChat });
-  find('#login-button').click();
-  await settle();
   assert.equal(called, 1);
+  assert.equal(find('#login-page').hidden, false);
   assert.equal(find('#auth-error').hidden, false);
   assert.equal(find('#login-button').disabled, false);
+  find('#login-button').click();
+  await settle();
+  assert.equal(called, 2);
 });
 
 test('signed-in chat sends a bearer token, renders reply and isolates saved history', async t => {
@@ -115,10 +119,27 @@ test('logout immediately hides chats and invokes Auth0 logout', async t => {
   assert.equal(find('#aisle-app').hidden, true);
 });
 
-test('expired session returns to login and keeps the unanswered message', async t => {
+test('expired session redirects to Universal Login and keeps the unanswered message', async t => {
+  let called = 0;
   const { Client, find, dom } = setup(t, {
     isAuthenticated: async () => true,
     getTokenSilently: async () => { throw { error: 'login_required' }; },
+    loginWithRedirect: async () => { called++; },
+  });
+  await mountAuth({ config, Client, startChat });
+  find('textarea').value = 'Find shoes';
+  find('.composer').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  await settle();
+  assert.equal(called, 1);
+  const saved = JSON.parse(localStorage.getItem('aisle.conversations.v1.live.auth0%7Calice'));
+  assert.equal(saved.conversations[0].messages[0].content, 'Find shoes');
+});
+
+test('expired session shows the login message when the redirect fails', async t => {
+  const { Client, find, dom } = setup(t, {
+    isAuthenticated: async () => true,
+    getTokenSilently: async () => { throw { error: 'login_required' }; },
+    loginWithRedirect: async () => { throw new Error('offline'); },
   });
   await mountAuth({ config, Client, startChat });
   find('textarea').value = 'Find shoes';
@@ -126,6 +147,4 @@ test('expired session returns to login and keeps the unanswered message', async 
   await settle();
   assert.equal(find('#aisle-app').hidden, true);
   assert.match(find('#auth-error').textContent, /log in again/i);
-  const saved = JSON.parse(localStorage.getItem('aisle.conversations.v1.live.auth0%7Calice'));
-  assert.equal(saved.conversations[0].messages[0].content, 'Find shoes');
 });
